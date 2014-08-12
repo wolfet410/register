@@ -36,7 +36,11 @@ class Rest {
       case 'GET':
         switch ($this->getPathObject() . '/' . $this->getPathDetail()) {
           case 'accounts/':
-            Common::log('rest.php, parseRequest, switch on path object: Just objects in URL, ie. http://.../objects/');
+            $auth = new Auth;
+            $uuid = $auth->getUuid();
+            $rg = new Register;
+            $listOfAccounts = $rg->getAccounts($uuid);
+            echo $listOfAccounts;
             break;
           case 'objects/detail':
             Common::log('rest.php, parseRequest, switch on path object: Objects and detail in URL, ie. http://.../objects/detail/');
@@ -56,7 +60,12 @@ class Rest {
         }
         break;
       case 'POST':
-        Common::log('POST Request');
+        switch ($this->getPathObject() . '/' . $this->getPathDetail()) {
+          case 'users/create':
+            $auth = new Auth;
+            $auth->createUser();
+            break;
+        }
         break;
       case 'PUT':
         Common::log('PUT');
