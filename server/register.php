@@ -15,7 +15,8 @@ class Register {
     * @return List of accounts in JSON
     */
     $db = Common::pdoDb();
-    $stmt = $db->prepare("SELECT auid,name,balance,reconsiled FROM Account WHERE uuid=:uuid");
+    $stmt = $db->prepare('SELECT Account.name, Account.balance FROM Account LEFT JOIN UserAccount '
+                         . 'ON UserAccount.auid = Account.auid WHERE UserAccount.uuid = :uuid');
     $stmt->execute(array(':uuid'=>$uuid));
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     if ($rows === FALSE || count($rows) < 1) {
