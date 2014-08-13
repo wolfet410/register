@@ -32,30 +32,34 @@ class Rest {
     *       Return each account name or a particular user, based on the auth header
     *       If an auth header isn't found, reply with a 401 Unauthorized
     */
+    unset($r);
     switch ($_SERVER['REQUEST_METHOD']) {
       case 'GET':
         switch ($this->getPathObject() . '/' . $this->getPathDetail()) {
           case 'accounts/':
             $auth = new Auth;
             $uuid = $auth->getUuid();
-            $rg = new Register;
-            $listOfAccounts = $rg->getAccounts($uuid);
-            echo $listOfAccounts;
+            if ($uuid === FALSE) {
+              Common::log('rest.php, get, case accounts/, bad auth');
+              Common::httpStatus('401.1');
+            } else {
+              $rg = new Register;
+              $listOfAccounts = $rg->getAccounts($uuid);
+              if ($listOfAccounts === FALSE) {
+                Common::log('rest.php, parseRequest, case accounts/, error returned from getAccounts');
+                Common::httpStatus('204');
+              } else {
+                echo $listOfAccounts;
+              }
+            }
             break;
           case 'objects/detail':
             Common::log('rest.php, parseRequest, switch on path object: Objects and detail in URL, ie. http://.../objects/detail/');
             break;
           case '400':
           default:
-            header('HTTP/1.1 400 Bad Request');
-            echo '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">'
-                 . PHP_EOL . '<html><head>'
-                 . PHP_EOL . '<title>400 Bad Request</title>'
-                 . PHP_EOL . '</head><body>'
-                 . PHP_EOL . '<h1>Bad Request</h1>'
-                 . PHP_EOL . '<p>Your browser sent a request that this server could not understand.</p>'
-                 . PHP_EOL . '</body></html>';
             Common::log('rest.php, parseRequest, switch on path object, HTTP 400: Bad request in URL');
+            Common::httpStatus('400');
             break;
         }
         break;
@@ -63,8 +67,31 @@ class Rest {
         switch ($this->getPathObject() . '/' . $this->getPathDetail()) {
           case 'users/create':
             $auth = new Auth;
-            $auth->createUser();
+            $r = $auth->createUser();
+            if ($r === 0) {
+                Common::httpStatus('201');
+            } else {
+              Common::log('rest.php, post, case users/create, createUser returned failure');
+              Common::httpStatus('403');
+            }
             break;
+          case 'accounts/create':
+            $auth = new Auth;
+            $uuid = $auth->getUuid();
+            if ($uuid === FALSE) {
+              Common::log('rest.php, post, case accounts/create, bad auth');
+              Common::httpStatus('401.1');
+            } else {
+              $rg = new Register;
+              $r = $rg->createAccount($uuid);
+              if ($r === 0) {
+                Common::httpStatus('201');
+              } else {
+                Common::log('rest.php, post, case accounts/create, createAccount returned failure');
+                Common::httpStatus('403');
+              } 
+              break;
+            }
         }
         break;
       case 'PUT':
@@ -74,16 +101,8 @@ class Rest {
         Common::log('DELETE');
         break;
       default:
-        header('HTTP/1.1 405 Method Not Allowed');
-        header('Allow: GET, POST, PUT, DELETE');
-        echo '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">'
-             . PHP_EOL . '<html><head>'
-             . PHP_EOL . '<title>405 Method Not Allowed</title>'
-             . PHP_EOL . '</head><body>'
-             . PHP_EOL . '<h1>Method Not Allowed</h1>'
-             . PHP_EOL . '<p>Your browser attempted to use a method unsupported by this server.</p>'
-             . PHP_EOL . '</body></html>';
         Common::log('rest.php, parseRequest, switch on method, HTTP 405: Invalid method sent in request');
+        Common::httpStatus('405');
         break;
     };
   }
